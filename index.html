@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Học Tập - Gemini</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#172033}
+header{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;padding:18px 20px}
+header h1{margin:0;font-size:25px}header p{margin:5px 0 0;opacity:.9}
+.wrap{max-width:1000px;margin:20px auto;padding:0 14px}
+.card{background:#fff;border-radius:16px;box-shadow:0 5px 22px #00000012;padding:18px;margin-bottom:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1;min-width:180px}
+label{font-weight:bold;font-size:14px;display:block;margin-bottom:6px}
+input,select,textarea,button{font:inherit;border:1px solid #d7deea;border-radius:10px;padding:11px}
+input,select,textarea{width:100%;background:#fff}
+textarea{min-height:110px;resize:vertical}
+button{cursor:pointer;background:#2563eb;color:#fff;border:0;font-weight:bold}
+button:hover{filter:brightness(.95)}
+button.secondary{background:#64748b}button.green{background:#059669}
+button.orange{background:#d97706}
+.chat{height:430px;overflow:auto;border:1px solid #e1e7f0;border-radius:12px;padding:12px;background:#f8fafc}
+.msg{max-width:85%;padding:11px 13px;border-radius:13px;margin:8px 0;white-space:pre-wrap;line-height:1.5}
+.user{margin-left:auto;background:#dbeafe}.ai{background:#fff;border:1px solid #e5e7eb}
+.small{font-size:13px;color:#64748b}.status{padding:10px;border-radius:9px;background:#f1f5f9;margin-top:10px;white-space:pre-wrap}
+.status.ok{background:#dcfce7;color:#166534}.status.err{background:#fee2e2;color:#991b1b}
+.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:12px}.tabs button{white-space:nowrap}
+.hidden{display:none}.danger{color:#b91c1c}
+code{background:#eef2ff;padding:2px 5px;border-radius:5px}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🤖 AI Học Tập</h1>
+<p>Trợ lý học tập • C++ • Python • Thuật toán • Tạo bài tập • Google Gemini</p>
+</header>
+
+<div class="wrap">
+
+<div class="card">
+  <div class="row">
+    <div>
+      <label>Gemini API Key</label>
+      <input id="key" type="password" autocomplete="off"
+             placeholder="Dán Gemini API key (thường bắt đầu bằng AIza...)">
+    </div>
+    <div>
+      <label>Gemini Model</label>
+      <input id="model" value="gemini-3.8-flash"
+             placeholder="Ví dụ: gemini-3.8-flash">
+    </div>
+  </div>
+
+  <div class="small" style="margin-top:8px">
+    API key được lưu cục bộ trong trình duyệt nếu bạn bấm “Lưu cấu hình”.
+    Không đưa API key vào mã nguồn hoặc GitHub khi triển khai website công khai.
+  </div>
+
+  <div style="margin-top:10px">
+    <button onclick="saveKey()">💾 Lưu cấu hình</button>
+    <button class="secondary" onclick="clearKey()">Xóa key</button>
+    <button class="green" onclick="testAI()">🔎 Kiểm tra API</button>
+  </div>
+
+  <div id="apiStatus" class="status hidden"></div>
+</div>
+
+<div class="card">
+<div class="tabs">
+<button onclick="showTab('chat')">💬 Chat AI</button>
+<button onclick="showTab('code')">💻 Giải thích code</button>
+<button onclick="showTab('exercise')">📝 Tạo bài tập</button>
+</div>
+
+<section id="chat">
+<div id="chatBox" class="chat">
+<div class="msg ai">Xin chào! Tôi là AI Học Tập. Hãy hỏi tôi về C++, Python, thuật toán hoặc các môn học.</div>
+</div>
+<div style="margin-top:10px">
+<textarea id="question" placeholder="Ví dụ: Giải thích vòng lặp for trong Python cho học sinh lớp 8..."></textarea>
+<div class="row" style="margin-top:8px">
+<select id="level">
+<option>Học sinh lớp 6</option><option>Học sinh lớp 7</option>
+<option>Học sinh lớp 8</option><option selected>Học sinh lớp 9</option>
+<option>Học sinh giỏi</option><option>Giáo viên</option>
+</select>
+<select id="subject">
+<option>Tin học</option><option>C++</option><option>Python</option>
+<option>Toán</option><option>Khoa học</option><option>Khác</option>
+</select>
+</div>
+<button style="margin-top:8px;width:100%" onclick="askAI()">🚀 Hỏi AI</button>
+</div>
+</section>
+
+<section id="code" class="hidden">
+<label>Ngôn ngữ</label>
+<select id="lang"><option>C++</option><option>Python</option></select>
+<label style="margin-top:10px">Dán code cần giải thích</label>
+<textarea id="codeInput" placeholder="Dán code vào đây..."></textarea>
+<button style="margin-top:8px;width:100%" onclick="explainCode()">🔍 Giải thích code</button>
+<div id="codeResult" class="status hidden"></div>
+</section>
+
+<section id="exercise" class="hidden">
+<div class="row">
+<div><label>Lớp</label><select id="exClass">
+<option>6</option><option>7</option><option selected>8</option><option>9</option>
+</select></div>
+<div><label>Chủ đề</label><select id="exTopic">
+<option>C++ cơ bản</option><option>Python cơ bản</option><option>Xâu</option>
+<option>Mảng</option><option>Vòng lặp</option><option>Thuật toán</option>
+</select></div>
+<div><label>Số bài</label><input id="exNum" type="number" value="5" min="1" max="20"></div>
+</div>
+<label style="margin-top:10px">Mức độ</label>
+<select id="exLevel">
+<option>Nhận biết</option><option>Thông hiểu</option>
+<option selected>Vận dụng</option><option>Học sinh giỏi</option>
+</select>
+<button style="margin-top:10px;width:100%" onclick="makeExercises()">✨ Tạo bài tập</button>
+<div id="exResult" class="status hidden"></div>
+</section>
+</div>
+</div>
+
+<script>
+const keyEl=document.getElementById('key');
+const modelEl=document.getElementById('model');
+const apiStatus=document.getElementById('apiStatus');
+
+keyEl.value=localStorage.getItem('gemini_api_key')||'';
+modelEl.value=localStorage.getItem('gemini_model')||'gemini-3.8-flash';
+
+function saveKey(){
+  const key=keyEl.value.trim();
+  const model=modelEl.value.trim()||'gemini-3.8-flash';
+  if(!key){showStatus('❌ Chưa nhập Gemini API key.','err');return;}
+  localStorage.setItem('gemini_api_key',key);
+  localStorage.setItem('gemini_model',model);
+  showStatus('✅ Đã lưu cấu hình trên thiết bị này.','ok');
+}
+
+function clearKey(){
+  localStorage.removeItem('gemini_api_key');
+  localStorage.removeItem('gemini_model');
+  keyEl.value='';
+  showStatus('Đã xóa API key và model đã lưu.','');
+}
+
+function showStatus(text,type){
+  apiStatus.className='status'+(type?' '+type:'');
+  apiStatus.textContent=text;
+  apiStatus.classList.remove('hidden');
+}
+
+function showTab(t){
+  ['chat','code','exercise'].forEach(x=>{
+    document.getElementById(x).classList.toggle('hidden',x!==t)
+  });
+}
+
+function addMsg(text,cls){
+  let d=document.createElement('div');
+  d.className='msg '+cls;
+  d.textContent=text;
+  let box=document.getElementById('chatBox');
+  box.appendChild(d);
+  box.scrollTop=box.scrollHeight;
+}
+
+/*
+ * Gọi Google Gemini generateContent REST API.
+ * API key chỉ dùng ở phía trình duyệt để test cá nhân.
+ * Khi triển khai website công khai, hãy chuyển API call sang backend.
+ */
+async function sleep(ms){
+  return new Promise(resolve=>setTimeout(resolve,ms));
+}
+
+function getModelCandidates(preferred){
+  const defaults=[
+    'gemini-3.8-flash',
+    'gemini-3.7-flash',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite'
+  ];
+
+  const list=[preferred,...defaults]
+    .map(x=>(x||'').trim())
+    .filter(Boolean);
+
+  return [...new Set(list)];
+}
+
+async function requestGemini(prompt,model,key){
+  const url=
+    'https://generativelanguage.googleapis.com/v1beta/models/' +
+    encodeURIComponent(model) +
+    ':generateContent';
+
+  let response;
+
+  try{
+    response=await fetch(url,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-goog-api-key':key
+      },
+      body:JSON.stringify({
+        contents:[{
+          role:'user',
+          parts:[{text:prompt}]
+        }]
+      })
+    });
+  }catch(e){
+    throw new Error(
+      'Không kết nối được Gemini API. Kiểm tra Internet, trình duyệt hoặc mạng. '+
+      'Chi tiết: '+e.message
+    );
+  }
+
+  const raw=await response.text();
+  let data={};
+
+  try{
+    data=raw?JSON.parse(raw):{};
+  }catch(e){
+    throw new Error(
+      'Gemini trả về dữ liệu không phải JSON. HTTP '+response.status+
+      '. Chi tiết: '+raw
+    );
+  }
+
+  if(!response.ok){
+    const msg=data?.error?.message||'Không có thông tin lỗi từ Gemini.';
+    const err=new Error(msg);
+    err.httpStatus=response.status;
+    err.apiMessage=msg;
+    err.model=model;
+    throw err;
+  }
+
+  const text=data?.candidates?.[0]?.content?.parts
+    ?.map(p=>p.text||'')
+    .join('');
+
+  if(text) return text;
+
+  if(data?.promptFeedback?.blockReason){
+    const err=new Error(
+      'Yêu cầu bị Gemini chặn: '+data.promptFeedback.blockReason
+    );
+    err.httpStatus=200;
+    throw err;
+  }
+
+  if(data?.candidates?.[0]?.finishReason){
+    const err=new Error(
+      'Gemini không trả về nội dung. finishReason: '+
+      data.candidates[0].finishReason
+    );
+    err.httpStatus=200;
+    throw err;
+  }
+
+  throw new Error('Gemini trả về response nhưng không có nội dung văn bản.');
+}
+
+async function callAI(prompt){
+  const key=keyEl.value.trim();
+  const preferred=modelEl.value.trim()||'gemini-3.8-flash';
+
+  if(!key){
+    throw new Error(
+      'Chưa nhập Gemini API key. Hãy tạo key trong Google AI Studio và dán vào ô Gemini API Key.'
+    );
+  }
+
+  if(key.startsWith('sk-')){
+    throw new Error(
+      'Bạn đang nhập OpenAI API key (sk-...). File này dùng Google Gemini. '+
+      'Hãy nhập Gemini API key, thường có dạng AIza...'
+    );
+  }
+
+  const models=getModelCandidates(preferred);
+  let lastError=null;
+
+  for(let i=0;i<models.length;i++){
+    const model=models[i];
+
+    // Thử model đang chọn tối đa 3 lần nếu server trả 503.
+    const attempts=3;
+
+    for(let attempt=1;attempt<=attempts;attempt++){
+      try{
+        return await requestGemini(prompt,model,key);
+      }catch(e){
+        lastError=e;
+
+        // Lỗi key/quyền/model không nên retry.
+        if(e.httpStatus===400 || e.httpStatus===401 ||
+           e.httpStatus===403 || e.httpStatus===404){
+          break;
+        }
+
+        // Chỉ retry lỗi tạm thời của server.
+        if(e.httpStatus!==503 && e.httpStatus!==500 &&
+           e.httpStatus!==502 && e.httpStatus!==504){
+          break;
+        }
+
+        if(attempt<attempts){
+          // Exponential backoff: 1.5s -> 3s, thêm jitter nhỏ.
+          const delay=Math.round((1500*Math.pow(2,attempt-1))+
+                                Math.random()*500);
+          await sleep(delay);
+        }
+      }
+    }
+
+    // Nếu model bị quá tải (503), chuyển sang model dự phòng.
+    if(lastError && lastError.httpStatus===503){
+      continue;
+    }
+
+    // Các lỗi khác dừng ngay để báo đúng nguyên nhân.
+    break;
+  }
+
+  if(lastError){
+    const status=lastError.httpStatus;
+    const msg=lastError.apiMessage||lastError.message||'Unknown error';
+
+    if(status===400 && /API key not valid|API_KEY_INVALID|valid API key/i.test(msg)){
+      throw new Error(
+        'API key không hợp lệ. Hãy tạo API key mới trong Google AI Studio. '+
+        'Chi tiết: '+msg
+      );
+    }
+
+    if(status===401){
+      throw new Error(
+        '401 Unauthorized: API key không hợp lệ hoặc đã bị thu hồi. '+msg
+      );
+    }
+
+    if(status===403){
+      throw new Error(
+        '403 Forbidden: API key/project không có quyền dùng Gemini API/model này. '+msg
+      );
+    }
+
+    if(status===404){
+      throw new Error(
+        '404 Not Found: model "'+(lastError.model||preferred)+
+        '" không tồn tại hoặc không khả dụng. '+msg
+      );
+    }
+
+    if(status===429){
+      throw new Error(
+        '429: Gemini API đang giới hạn request/quota. Hãy kiểm tra quota và billing. '+msg
+      );
+    }
+
+    if(status===503){
+      throw new Error(
+        '503: Gemini đang quá tải. Ứng dụng đã tự thử lại và chuyển qua các model dự phòng '+
+        '(3.8 → 3.7 → 3.6 → 3.5 Flash-Lite) nhưng vẫn chưa nhận được phản hồi. '+
+        'Bạn có thể thử lại sau hoặc đổi model thủ công. '+msg
+      );
+    }
+
+    throw new Error(
+      'Gemini API lỗi HTTP '+status+': '+msg
+    );
+  }
+
+  throw new Error('Không nhận được phản hồi từ Gemini API.');
+}
+async function testAI(){
+  showStatus(
+    '⏳ Đang kiểm tra API. Nếu model chính quá tải, hệ thống sẽ tự thử lại và chuyển model dự phòng...',''
+  );
+  try{
+    const answer=await callAI(
+      'Trả lời đúng một câu: "Kết nối Gemini thành công."'
+    );
+    showStatus(
+      '✅ Kết nối thành công!\n\nModel ưu tiên: '+
+      (modelEl.value.trim()||'gemini-3.8-flash')+
+      '\n\nPhản hồi: '+answer+
+      '\n\nLưu ý: Nếu model ưu tiên quá tải, hệ thống tự động thử model dự phòng.','ok'
+    );
+  }catch(e){
+    showStatus('❌ Kiểm tra thất bại\n\n'+e.message,'err');
+  }
+}
+
+async function askAI(){
+  const q=document.getElementById('question').value.trim();
+  if(!q)return;
+
+  addMsg(q,'user');
+  document.getElementById('question').value='';
+  addMsg('Đang suy nghĩ...','ai');
+
+  let box=document.getElementById('chatBox');
+  let wait=box.lastChild;
+
+  try{
+    let prompt=
+      `Bạn là trợ lý học tập cho ${document.getElementById('level').value}. `+
+      `Môn/chủ đề: ${document.getElementById('subject').value}.\n`+
+      `Giải thích bằng tiếng Việt, dễ hiểu, có ví dụ. `+
+      `Nếu là lập trình, ưu tiên code đơn giản và giải thích từng phần.\n`+
+      `Câu hỏi: ${q}`;
+
+    wait.textContent=await callAI(prompt);
+  }catch(e){
+    wait.textContent='❌ '+e.message;
+  }
+}
+
+async function explainCode(){
+  const code=document.getElementById('codeInput').value.trim();
+  const out=document.getElementById('codeResult');
+  if(!code)return;
+
+  out.classList.remove('hidden');
+  out.textContent='Đang phân tích...';
+
+  try{
+    out.textContent=await callAI(
+      `Bạn là giáo viên Tin học THCS. Hãy giải thích đoạn `+
+      `${document.getElementById('lang').value} sau cho học sinh lớp 8-9. `+
+      `Nêu: 1) code làm gì, 2) giải thích từng phần, `+
+      `3) lỗi nếu có, 4) cách viết dễ hiểu hơn.\n\n${code}`
+    );
+  }catch(e){
+    out.textContent='❌ '+e.message;
+  }
+}
+
+async function makeExercises(){
+  const out=document.getElementById('exResult');
+  out.classList.remove('hidden');
+  out.textContent='Đang tạo bài...';
+
+  try{
+    out.textContent=await callAI(
+      `Tạo ${document.getElementById('exNum').value} bài tập lập trình `+
+      `cho học sinh lớp ${document.getElementById('exClass').value}, `+
+      `chủ đề ${document.getElementById('exTopic').value}, `+
+      `mức ${document.getElementById('exLevel').value}. `+
+      `Mỗi bài gồm: đề bài, input, output, ví dụ, gợi ý thuật toán. `+
+      `Không cần lời giải trừ khi được yêu cầu.`
+    );
+  }catch(e){
+    out.textContent='❌ '+e.message;
+  }
+}
+</script>
+</body>
+</html>
